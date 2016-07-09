@@ -14,6 +14,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,8 +24,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.sinh.whateats.R;
+import com.example.sinh.whateats.events.KeywordSubmitEvent;
+import com.example.sinh.whateats.models.foursquare.Venue;
+import com.example.sinh.whateats.models.googleplace.Result;
 
-public class SearchActivity extends AppCompatActivity {
+import org.greenrobot.eventbus.EventBus;
+
+public class SearchActivity extends AppCompatActivity implements OnListFragmentInteractionListener{
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -41,6 +47,15 @@ public class SearchActivity extends AppCompatActivity {
      */
     private ViewPager mViewPager;
 
+    /**
+     * The result {@link Fragment} for each {@link ViewPager} item
+     */
+    private FoursquareResultFragment foursquareResultFragment;
+    private GooglePlaceResultFragment googlePlaceResultFragment;
+
+    /**
+     * The {@link SearchView}
+     */
     private SearchView searchView;
 
     @Override
@@ -76,6 +91,8 @@ public class SearchActivity extends AppCompatActivity {
     private SearchView.OnQueryTextListener mQueryTextListener = new SearchView.OnQueryTextListener() {
         @Override
         public boolean onQueryTextSubmit(String query) {
+            EventBus.getDefault().post(new KeywordSubmitEvent(query));
+            searchView.clearFocus();
             return true;
         }
 
@@ -110,6 +127,16 @@ public class SearchActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onResultListItemClicked(Result item) {
+        Log.d("Item Clicked", item.getName());
+    }
+
+    @Override
+    public void onVenueListItemClicked(Venue item) {
+        Log.d("Item Clicked", item.getName());
     }
 
     /**
@@ -161,7 +188,18 @@ public class SearchActivity extends AppCompatActivity {
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            switch (position) {
+                case 0: {
+                    googlePlaceResultFragment = GooglePlaceResultFragment.newInstance(1);
+                    return googlePlaceResultFragment;
+                }
+                case 1: {
+                    foursquareResultFragment = FoursquareResultFragment.newInstance(1);
+                    return foursquareResultFragment;
+                }
+
+            }
+            return null;
         }
 
         @Override
@@ -174,9 +212,9 @@ public class SearchActivity extends AppCompatActivity {
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return "SECTION 1";
+                    return "GOOGLE PLACE";
                 case 1:
-                    return "SECTION 2";
+                    return "FOURSQUARE";
             }
             return null;
         }
