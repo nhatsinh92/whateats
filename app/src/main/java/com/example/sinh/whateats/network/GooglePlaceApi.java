@@ -1,6 +1,7 @@
 package com.example.sinh.whateats.network;
 
-import kimhieu.me.anzi.models.googleplace.GooglePlaceResponse;
+import com.example.sinh.whateats.models.googleplace.GooglePlaceResponse;
+
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;

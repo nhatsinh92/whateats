@@ -1,9 +1,12 @@
-package com.example.sinh.whateats;
+package com.example.sinh.whateats.search;
 
+import android.app.SearchManager;
+import android.content.Context;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
@@ -18,6 +21,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.TextView;
+
+import com.example.sinh.whateats.R;
 
 public class SearchActivity extends AppCompatActivity {
 
@@ -35,6 +40,8 @@ public class SearchActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+
+    private SearchView searchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,10 +73,27 @@ public class SearchActivity extends AppCompatActivity {
     }
 
 
+    private SearchView.OnQueryTextListener mQueryTextListener = new SearchView.OnQueryTextListener() {
+        @Override
+        public boolean onQueryTextSubmit(String query) {
+            return true;
+        }
+
+        @Override
+        public boolean onQueryTextChange(String newText) {
+            return false;
+        }
+    };
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_search, menu);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+        searchView.setOnQueryTextListener(mQueryTextListener);
         return true;
     }
 
@@ -142,8 +166,8 @@ public class SearchActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            // Show 3 total pages.
-            return 3;
+            // Show 2 total pages.
+            return 2;
         }
 
         @Override
@@ -153,8 +177,6 @@ public class SearchActivity extends AppCompatActivity {
                     return "SECTION 1";
                 case 1:
                     return "SECTION 2";
-                case 2:
-                    return "SECTION 3";
             }
             return null;
         }
