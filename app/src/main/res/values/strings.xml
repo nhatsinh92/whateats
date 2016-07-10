@@ -4,4 +4,6 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="search_title">Search food or drink</string>
     <string name="search_hint">What to eat?</string>
+    <string name="title_activity_detail">DetailActivity</string>
+
 </resources>

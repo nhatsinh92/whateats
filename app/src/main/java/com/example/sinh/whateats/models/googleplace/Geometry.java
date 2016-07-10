@@ -12,6 +12,9 @@ public class Geometry implements Parcelable {
     @SerializedName("location")
     @Expose
     private Location location;
+    @SerializedName("viewport")
+    @Expose
+    private Viewport viewport;
 
     protected Geometry(Parcel in) {
         location = in.readParcelable(Location.class.getClassLoader());
@@ -45,6 +48,24 @@ public class Geometry implements Parcelable {
      */
     public void setLocation(Location location) {
         this.location = location;
+    }
+
+    /**
+     *
+     * @return
+     *     The viewport
+     */
+    public Viewport getViewport() {
+        return viewport;
+    }
+
+    /**
+     *
+     * @param viewport
+     *     The viewport
+     */
+    public void setViewport(Viewport viewport) {
+        this.viewport = viewport;
     }
 
     @Override

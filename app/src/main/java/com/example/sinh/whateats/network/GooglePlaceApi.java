@@ -1,7 +1,9 @@
 package com.example.sinh.whateats.network;
 
 import com.example.sinh.whateats.models.googleplace.GooglePlaceResponse;
+import com.example.sinh.whateats.models.googleplace.PlaceResponse;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
@@ -15,5 +17,17 @@ public interface GooglePlaceApi {
             @Query("location") String location,
             @Query("keyword") String keyword,
             @Query("rankby") String rankBy
+    );
+
+    @GET("photo")
+    Call<ResponseBody> getPhoto(
+            @Query("photoreference") String photoReference,
+            @Query("maxheight") int maxHeight,
+            @Query("maxwidth") int maxWidth
+    );
+
+    @GET("details/json")
+    Call<PlaceResponse> getPlaceDetail(
+            @Query("placeid") String placeId
     );
 }

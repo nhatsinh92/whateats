@@ -35,6 +35,7 @@ public class FoursquareServiceGenerator {
                 HttpUrl.Builder builder = chain.request().url().newBuilder();
                 builder.addQueryParameter("client_id", "AVAYIEK1UEMN1JDKTBZCYKRYWOMVIORT3IWSOXVP4HFESYKD");
                 builder.addQueryParameter("client_secret", "HXGMTLOS4KKDI1EJS1BMJ0O3XKGULIX22WUJJOSF3MYT2AHM");
+                builder.addQueryParameter("v", "20130815");
                 HttpUrl url = builder.build();
                 Request.Builder reqBuilder = chain.request().newBuilder();
                 reqBuilder.url(url);

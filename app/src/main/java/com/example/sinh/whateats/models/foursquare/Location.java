@@ -1,13 +1,16 @@
 
 package com.example.sinh.whateats.models.foursquare;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Location {
+public class Location implements Parcelable {
 
     @SerializedName("address")
     @Expose
@@ -42,6 +45,29 @@ public class Location {
     @SerializedName("formattedAddress")
     @Expose
     private List<String> formattedAddress = new ArrayList<String>();
+
+    protected Location(Parcel in) {
+        address = in.readString();
+        crossStreet = in.readString();
+        postalCode = in.readString();
+        cc = in.readString();
+        city = in.readString();
+        state = in.readString();
+        country = in.readString();
+        formattedAddress = in.createStringArrayList();
+    }
+
+    public static final Creator<Location> CREATOR = new Creator<Location>() {
+        @Override
+        public Location createFromParcel(Parcel in) {
+            return new Location(in);
+        }
+
+        @Override
+        public Location[] newArray(int size) {
+            return new Location[size];
+        }
+    };
 
     /**
      * 
@@ -241,4 +267,20 @@ public class Location {
         this.formattedAddress = formattedAddress;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(address);
+        parcel.writeString(crossStreet);
+        parcel.writeString(postalCode);
+        parcel.writeString(cc);
+        parcel.writeString(city);
+        parcel.writeString(state);
+        parcel.writeString(country);
+        parcel.writeStringList(formattedAddress);
+    }
 }

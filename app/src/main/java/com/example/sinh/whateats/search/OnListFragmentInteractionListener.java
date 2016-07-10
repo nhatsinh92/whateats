@@ -18,7 +18,7 @@ import com.example.sinh.whateats.models.googleplace.Result;
  * >Communicating with Other Fragments</a> for more information.
  */
 public interface OnListFragmentInteractionListener {
-    // TODO: Update argument type and name
+
     void onResultListItemClicked(Result item);
 
     void onVenueListItemClicked(Venue item);

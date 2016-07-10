@@ -12,6 +12,30 @@ public class Response {
     @SerializedName("venues")
     @Expose
     private List<Venue> venues = new ArrayList<Venue>();
+    @SerializedName("photos")
+    @Expose
+    private Photos photos;
+    @SerializedName("venue")
+    @Expose
+    private Venue venue;
+
+    /**
+     *
+     * @return
+     *     The venue
+     */
+    public Venue getVenue() {
+        return venue;
+    }
+
+    /**
+     *
+     * @param venue
+     *     The venue
+     */
+    public void setVenue(Venue venue) {
+        this.venue = venue;
+    }
 
     /**
      * 
@@ -29,6 +53,24 @@ public class Response {
      */
     public void setVenues(List<Venue> venues) {
         this.venues = venues;
+    }
+
+    /**
+     *
+     * @return
+     *     The photos
+     */
+    public Photos getPhotos() {
+        return photos;
+    }
+
+    /**
+     *
+     * @param photos
+     *     The photos
+     */
+    public void setPhotos(Photos photos) {
+        this.photos = photos;
     }
 
 }

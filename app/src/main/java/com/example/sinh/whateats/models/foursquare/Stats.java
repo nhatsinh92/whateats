@@ -15,6 +15,9 @@ public class Stats {
     @SerializedName("tipCount")
     @Expose
     private Integer tipCount;
+    @SerializedName("visitsCount")
+    @Expose
+    private Integer visitsCount;
 
     /**
      * 
@@ -68,6 +71,24 @@ public class Stats {
      */
     public void setTipCount(Integer tipCount) {
         this.tipCount = tipCount;
+    }
+
+    /**
+     *
+     * @return
+     *     The visitsCount
+     */
+    public Integer getVisitsCount() {
+        return visitsCount;
+    }
+
+    /**
+     *
+     * @param visitsCount
+     *     The visitsCount
+     */
+    public void setVisitsCount(Integer visitsCount) {
+        this.visitsCount = visitsCount;
     }
 
 }

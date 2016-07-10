@@ -8,6 +8,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Result implements Parcelable {
@@ -56,6 +57,7 @@ public class Result implements Parcelable {
         types = in.createStringArrayList();
         vicinity = in.readString();
         geometry = in.readParcelable(Geometry.class.getClassLoader());
+        in.readTypedList(photos, Photo.CREATOR);
     }
 
     public static final Creator<Result> CREATOR = new Creator<Result>() {
@@ -284,5 +286,6 @@ public class Result implements Parcelable {
         parcel.writeStringList(types);
         parcel.writeString(vicinity);
         parcel.writeParcelable(geometry, i);
+        parcel.writeTypedList(photos);
     }
 }

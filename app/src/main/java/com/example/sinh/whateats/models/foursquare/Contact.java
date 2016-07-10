@@ -15,9 +15,18 @@ public class Contact {
     @SerializedName("twitter")
     @Expose
     private String twitter;
+    @SerializedName("facebook")
+    @Expose
+    private String facebook;
+    @SerializedName("facebookUsername")
+    @Expose
+    private String facebookUsername;
+    @SerializedName("facebookName")
+    @Expose
+    private String facebookName;
 
     /**
-     * 
+     *
      * @return
      *     The phone
      */
@@ -26,7 +35,7 @@ public class Contact {
     }
 
     /**
-     * 
+     *
      * @param phone
      *     The phone
      */
@@ -35,7 +44,7 @@ public class Contact {
     }
 
     /**
-     * 
+     *
      * @return
      *     The formattedPhone
      */
@@ -44,7 +53,7 @@ public class Contact {
     }
 
     /**
-     * 
+     *
      * @param formattedPhone
      *     The formattedPhone
      */
@@ -53,7 +62,7 @@ public class Contact {
     }
 
     /**
-     * 
+     *
      * @return
      *     The twitter
      */
@@ -62,12 +71,66 @@ public class Contact {
     }
 
     /**
-     * 
+     *
      * @param twitter
      *     The twitter
      */
     public void setTwitter(String twitter) {
         this.twitter = twitter;
+    }
+
+    /**
+     *
+     * @return
+     *     The facebook
+     */
+    public String getFacebook() {
+        return facebook;
+    }
+
+    /**
+     *
+     * @param facebook
+     *     The facebook
+     */
+    public void setFacebook(String facebook) {
+        this.facebook = facebook;
+    }
+
+    /**
+     *
+     * @return
+     *     The facebookUsername
+     */
+    public String getFacebookUsername() {
+        return facebookUsername;
+    }
+
+    /**
+     *
+     * @param facebookUsername
+     *     The facebookUsername
+     */
+    public void setFacebookUsername(String facebookUsername) {
+        this.facebookUsername = facebookUsername;
+    }
+
+    /**
+     *
+     * @return
+     *     The facebookName
+     */
+    public String getFacebookName() {
+        return facebookName;
+    }
+
+    /**
+     *
+     * @param facebookName
+     *     The facebookName
+     */
+    public void setFacebookName(String facebookName) {
+        this.facebookName = facebookName;
     }
 
 }

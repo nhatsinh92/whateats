@@ -2,6 +2,7 @@ package com.example.sinh.whateats.search;
 
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -24,6 +25,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.example.sinh.whateats.R;
+import com.example.sinh.whateats.detail.DetailActivity;
 import com.example.sinh.whateats.events.KeywordSubmitEvent;
 import com.example.sinh.whateats.models.foursquare.Venue;
 import com.example.sinh.whateats.models.googleplace.Result;
@@ -57,6 +59,12 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
      * The {@link SearchView}
      */
     private SearchView searchView;
+
+    /**
+     * The extra names that put to {@link Intent}
+     */
+    public final static String RESULT_ITEM = "com.example.sinh.whateats.search.RESULT_ITEM";
+    public final static String VENUE_ITEM = "com.example.sinh.whateats.search.VENUE_ITEM";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,46 +140,17 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
     @Override
     public void onResultListItemClicked(Result item) {
         Log.d("Item Clicked", item.getName());
+        Intent i = new Intent(SearchActivity.this, DetailActivity.class);
+        i.putExtra(RESULT_ITEM, item);
+        startActivity(i);
     }
 
     @Override
     public void onVenueListItemClicked(Venue item) {
         Log.d("Item Clicked", item.getName());
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_search, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
-        }
+        Intent i = new Intent(SearchActivity.this, DetailActivity.class);
+        i.putExtra(VENUE_ITEM, item);
+        startActivity(i);
     }
 
     /**
