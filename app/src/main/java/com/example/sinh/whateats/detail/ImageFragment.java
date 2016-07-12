@@ -64,6 +64,7 @@ public class ImageFragment extends Fragment {
         Glide.with(view.getContext())
                 .load(this.mImageUrl)
                 .thumbnail(Glide.with(view.getContext()).load(R.raw.loading))
+                .error(R.drawable.ic_place_holder_2)
                 .dontAnimate()
                 .into(imageView);
         return view;

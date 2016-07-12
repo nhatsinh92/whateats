@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
@@ -28,6 +29,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -40,9 +42,11 @@ import java.util.List;
 public class MapsActivity extends AppCompatActivity implements
         OnMapReadyCallback,
         GoogleMap.OnMarkerClickListener,
-        GoogleMap.OnInfoWindowClickListener {
+        GoogleMap.OnInfoWindowClickListener,
+        GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
+    private Menu mOptionsMenu;
 
     private List<Venue> venueList = new ArrayList<>();
     private List<Result> resultList = new ArrayList<>();
@@ -83,56 +87,9 @@ public class MapsActivity extends AppCompatActivity implements
 
         mMap.setOnMarkerClickListener(this);
         mMap.setOnInfoWindowClickListener(this);
+        mMap.setOnMapClickListener(this);
 
-        if (resultList != null && venueList != null && mMap != null) {
-            LatLngBounds.Builder builder = new LatLngBounds.Builder();
-
-            for (Result r: resultList) {
-                com.example.sinh.whateats.models.googleplace.Location l = r.getGeometry().getLocation();
-                LatLng latLng = new LatLng(l.getLat(), l.getLng());
-                Marker m = mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title(r.getName())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-                builder.include(latLng);
-                markers.put(m, new MarkerInformation(r.getPlaceId(), r.getVicinity(), r.getIcon(), "result"));
-            }
-            for (Venue v : venueList) {
-                com.example.sinh.whateats.models.foursquare.Location l = v.getLocation();
-                LatLng latLng = new LatLng(l.getLat(),l.getLng());
-                Marker m = mMap.addMarker(new MarkerOptions()
-                        .position(latLng)
-                        .title(v.getName())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
-                builder.include(latLng);
-                String icon = v.getCategories().get(0).getIcon().getPrefix() + "64" + v.getCategories().get(0).getIcon().getSuffix();
-                markers.put(m, new MarkerInformation(v.getId(), v.getLocation().getAddress(), icon, "venue"));
-            }
-
-            LatLngBounds bounds = builder.build();
-            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0));
-            // Setting an info window adapter allows us to change the both the contents and look of the
-            // info window.
-            mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(markers));
-            if (venue != null) {
-                for (Marker m: markers.keySet()) {
-                    if (markers.get(m).id.equals(venue.getId())) {
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
-                        m.showInfoWindow();
-                        break;
-                    }
-                }
-            }else if (result != null) {
-                for (Marker m: markers.keySet()) {
-                    if (markers.get(m).id.equals(result.getPlaceId())) {
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
-                        m.showInfoWindow();
-                        break;
-                    }
-                }
-            }
-        }
-
+        populateMarkers();
     }
 
     @Override
@@ -141,13 +98,29 @@ public class MapsActivity extends AppCompatActivity implements
             case android.R.id.home:
                 this.onBackPressed();
                 return true;
+            case R.id.direction:
+                
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        mOptionsMenu = menu;
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_map, menu);
+
+        if (venue != null || result != null) {
+            showDirection(true);
+        }
+
+        return true;
+    }
+
+    @Override
     public boolean onMarkerClick(Marker marker) {
+        showDirection(true);
         return false;
     }
 
@@ -187,6 +160,68 @@ public class MapsActivity extends AppCompatActivity implements
         }
     }
 
+    @Override
+    public void onMapClick(LatLng latLng) {
+        showDirection(false);
+    }
+
+    private void populateMarkers() {
+        if (!resultList.isEmpty() && !venueList.isEmpty() && mMap != null) {
+            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+
+            for (Result r: resultList) {
+                com.example.sinh.whateats.models.googleplace.Location l = r.getGeometry().getLocation();
+                LatLng latLng = new LatLng(l.getLat(), l.getLng());
+                Marker m = mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(r.getName())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                builder.include(latLng);
+                markers.put(m, new MarkerInformation(r.getPlaceId(), r.getVicinity(), r.getIcon(), "result"));
+            }
+            for (Venue v : venueList) {
+                com.example.sinh.whateats.models.foursquare.Location l = v.getLocation();
+                LatLng latLng = new LatLng(l.getLat(),l.getLng());
+                Marker m = mMap.addMarker(new MarkerOptions()
+                        .position(latLng)
+                        .title(v.getName())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
+                builder.include(latLng);
+                String icon = v.getCategories().get(0).getIcon().getPrefix() + "64" + v.getCategories().get(0).getIcon().getSuffix();
+                markers.put(m, new MarkerInformation(v.getId(), v.getLocation().getAddress(), icon, "venue"));
+            }
+
+            LatLngBounds bounds = builder.build();
+            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 10));
+            // Setting an info window adapter allows us to change the both the contents and look of the
+            // info window.
+            mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(markers));
+            if (venue != null) {
+                for (Marker m: markers.keySet()) {
+                    if (markers.get(m).id.equals(venue.getId())) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
+                        m.showInfoWindow();
+                        break;
+                    }
+                }
+            }else if (result != null) {
+                for (Marker m: markers.keySet()) {
+                    if (markers.get(m).id.equals(result.getPlaceId())) {
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
+                        m.showInfoWindow();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void showDirection(boolean b) {
+        if (mOptionsMenu != null) {
+            mOptionsMenu.getItem(0).setVisible(b);
+        }
+    }
+
     private boolean isNewPlaceClicked (MarkerInformation mi){
         if (venue != null) {
             if (!mi.id.equals(venue.getId())) {
@@ -200,6 +235,7 @@ public class MapsActivity extends AppCompatActivity implements
         }
         return false;
     }
+
     public class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
 
         private View mView;
