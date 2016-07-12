@@ -2,6 +2,7 @@ package com.example.sinh.whateats.search;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,9 +11,18 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.example.sinh.whateats.R;
+import com.example.sinh.whateats.models.foursquare.Item;
+import com.example.sinh.whateats.models.foursquare.PhotosResponse;
 import com.example.sinh.whateats.models.foursquare.Venue;
+import com.example.sinh.whateats.network.FoursquareApi;
+import com.example.sinh.whateats.network.FoursquareServiceGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 /**
  * {@link RecyclerView.Adapter} that can display a {@link Venue} and makes a call to the
@@ -22,7 +32,7 @@ import java.util.List;
 public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<FoursquareResultRecyclerViewAdapter.ViewHolder> {
 
     private final Context mContext;
-    private final List<Venue> mVenueList;
+    private List<Venue> mVenueList = new ArrayList<>();
     private final OnListFragmentInteractionListener mListener;
 
     public FoursquareResultRecyclerViewAdapter(Context mContext, List<Venue> items, OnListFragmentInteractionListener listener) {
@@ -41,14 +51,11 @@ public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<Fo
     @Override
     public void onBindViewHolder(final ViewHolder holder, int position) {
         holder.mItem = mVenueList.get(position);
-        String icon = mVenueList.get(position).getCategories().get(0).getIcon().getPrefix()
-                + "64" + mVenueList.get(position).getCategories().get(0).getIcon().getSuffix();
-        Glide.with(mContext)
-                .load(icon)
-                .into(holder.mIcon);
-        holder.mName.setText(mVenueList.get(position).getName());
-        holder.mAddress.setText(mVenueList.get(position).getLocation().getAddress());
-
+        holder.mName.setText(holder.mItem.getName());
+        holder.mAddress.setText(holder.mItem.getLocation()
+                .getFormattedAddress().toString()
+                .replace("[","").replace("]",""));
+        getPhotoAndSet(holder.mImage, holder.mItem);
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,9 +73,39 @@ public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<Fo
         return mVenueList.size();
     }
 
+    private void getPhotoAndSet(final ImageView iv, Venue v) {
+        FoursquareApi foursquareApi = FoursquareServiceGenerator.createService(FoursquareApi.class);
+        Call<PhotosResponse> photosResponseCall = foursquareApi.getPhotos(v.getId());
+        photosResponseCall.enqueue(new Callback<PhotosResponse>() {
+            @Override
+            public void onResponse(Call<PhotosResponse> call, Response<PhotosResponse> response) {
+                List<Item> itemList = response.body().getResponse().getPhotos().getItems();
+                if (itemList.isEmpty()) {
+                    iv.setImageResource(R.drawable.ic_place_holder_2);
+                } else {
+                    Item i = itemList.get(0);
+                    String url= i.getPrefix()
+                            + "original" + i.getSuffix();
+                    Glide.with(mContext)
+                            .load(url)
+                            .placeholder(R.drawable.ic_place_holder_2)
+                            .error(R.drawable.ic_place_holder_2)
+                            .crossFade()
+                            .into(iv);
+                }
+            }
+
+            @Override
+            public void onFailure(Call<PhotosResponse> call, Throwable t) {
+                Log.e("GET_PHOTO", "Some error when get foursquare photos");
+                iv.setImageResource(R.drawable.ic_place_holder_2);
+            }
+        });
+    }
+
     public class ViewHolder extends RecyclerView.ViewHolder {
         public final View mView;
-        public final ImageView mIcon;
+        public final ImageView mImage;
         public final TextView mName;
         public final TextView mAddress;
         public Venue mItem;
@@ -76,7 +113,7 @@ public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<Fo
         public ViewHolder(View view) {
             super(view);
             mView = view;
-            mIcon = (ImageView) view.findViewById(R.id.icon);
+            mImage = (ImageView) view.findViewById(R.id.image);
             mName = (TextView) view.findViewById(R.id.name);
             mAddress = (TextView) view.findViewById(R.id.address);
         }

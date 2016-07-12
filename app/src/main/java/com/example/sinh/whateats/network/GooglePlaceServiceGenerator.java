@@ -26,9 +26,9 @@ public class GooglePlaceServiceGenerator {
 
     public static <S> S createService(Class<S> serviceClass) {
         httpClientBuilder = new OkHttpClient.Builder();
-        logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-        httpClientBuilder.addInterceptor(logging);
+//        logging = new HttpLoggingInterceptor();
+//        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+//        httpClientBuilder.addInterceptor(logging);
         httpClientBuilder.addInterceptor(new Interceptor() {
             @Override
             public Response intercept(Chain chain) throws IOException {

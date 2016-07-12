@@ -76,7 +76,7 @@ public class DetailActivity extends AppCompatActivity {
     private List<Fragment> mImageFragmentList = new ArrayList<>();
     private GooglePlaceApi googlePlaceApi;
     private FoursquareApi foursquareApi;
-    private static String NO_IMAGE_FOUND_URL = "http://www.geniusparts.co.uk/wp-content/plugins/woocommerce/assets/images/placeholder.png";
+    public static String NO_IMAGE_FOUND_URL = "http://www.geniusparts.co.uk/wp-content/plugins/woocommerce/assets/images/placeholder.png";
 
     private TextView textViewPlaceName;
     private TextView textViewReviews;

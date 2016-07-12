@@ -195,7 +195,7 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
                     return googlePlaceResultFragment;
                 }
                 case 1: {
-                    foursquareResultFragment = FoursquareResultFragment.newInstance(1);
+                    foursquareResultFragment = FoursquareResultFragment.newInstance(2);
                     return foursquareResultFragment;
                 }
 
