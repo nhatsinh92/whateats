@@ -42,7 +42,7 @@ public class GooglePlaceResultFragment extends Fragment {
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
     private GooglePlaceApi googlePlaceApi;
-    private List<Result> resultList = new ArrayList<>();
+    public List<Result> resultList = new ArrayList<>();
     private GooglePlaceResultRecyclerViewAdapter mAdapter;
 
     /**

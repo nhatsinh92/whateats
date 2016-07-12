@@ -3,6 +3,7 @@ package com.example.sinh.whateats.search;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Parcelable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -27,10 +28,14 @@ import android.widget.TextView;
 import com.example.sinh.whateats.R;
 import com.example.sinh.whateats.detail.DetailActivity;
 import com.example.sinh.whateats.events.KeywordSubmitEvent;
+import com.example.sinh.whateats.maps.MapsActivity;
 import com.example.sinh.whateats.models.foursquare.Venue;
 import com.example.sinh.whateats.models.googleplace.Result;
 
 import org.greenrobot.eventbus.EventBus;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SearchActivity extends AppCompatActivity implements OnListFragmentInteractionListener{
 
@@ -65,6 +70,9 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
      */
     public final static String RESULT_ITEM = "com.example.sinh.whateats.search.RESULT_ITEM";
     public final static String VENUE_ITEM = "com.example.sinh.whateats.search.VENUE_ITEM";
+    public final static String RESULT_LIST = "com.example.sinh.whateats.search.RESULT_LIST";
+    public final static String VENUE_LIST = "com.example.sinh.whateats.search.VENUE_LIST";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,8 +96,14 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+                Intent intent = new Intent(SearchActivity.this, MapsActivity.class);
+                List<Venue> venueList = foursquareResultFragment.venueList;
+                intent.putParcelableArrayListExtra(VENUE_LIST, (ArrayList<? extends Parcelable>) venueList);
+                List<Result> resultList = googlePlaceResultFragment.resultList;
+                intent.putParcelableArrayListExtra(RESULT_LIST, (ArrayList<? extends Parcelable>) resultList);
+                startActivity(intent);
             }
         });
 
@@ -142,6 +156,10 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
         Log.d("Item Clicked", item.getName());
         Intent i = new Intent(SearchActivity.this, DetailActivity.class);
         i.putExtra(RESULT_ITEM, item);
+        List<Venue> venueList = foursquareResultFragment.venueList;
+        i.putParcelableArrayListExtra(VENUE_LIST, (ArrayList<? extends Parcelable>) venueList);
+        List<Result> resultList = googlePlaceResultFragment.resultList;
+        i.putParcelableArrayListExtra(RESULT_LIST, (ArrayList<? extends Parcelable>) resultList);
         startActivity(i);
     }
 
@@ -150,6 +168,10 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
         Log.d("Item Clicked", item.getName());
         Intent i = new Intent(SearchActivity.this, DetailActivity.class);
         i.putExtra(VENUE_ITEM, item);
+        List<Venue> venueList = foursquareResultFragment.venueList;
+        i.putParcelableArrayListExtra(VENUE_LIST, (ArrayList<? extends Parcelable>) venueList);
+        List<Result> resultList = googlePlaceResultFragment.resultList;
+        i.putParcelableArrayListExtra(RESULT_LIST, (ArrayList<? extends Parcelable>) resultList);
         startActivity(i);
     }
 

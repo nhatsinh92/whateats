@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -27,6 +28,7 @@ import android.widget.Toast;
 import com.amulyakhare.textdrawable.TextDrawable;
 import com.bumptech.glide.Glide;
 import com.example.sinh.whateats.R;
+import com.example.sinh.whateats.maps.MapsActivity;
 import com.example.sinh.whateats.models.foursquare.Timeframe;
 import com.example.sinh.whateats.models.foursquare.Venue;
 import com.example.sinh.whateats.models.foursquare.Item;
@@ -76,7 +78,6 @@ public class DetailActivity extends AppCompatActivity {
     private FoursquareApi foursquareApi;
     private static String NO_IMAGE_FOUND_URL = "http://www.geniusparts.co.uk/wp-content/plugins/woocommerce/assets/images/placeholder.png";
 
-
     private TextView textViewPlaceName;
     private TextView textViewReviews;
     private TextView textViewPhotos;
@@ -91,6 +92,11 @@ public class DetailActivity extends AppCompatActivity {
     private ImageView imageViewStaticMap;
     private TextView textViewFormattedAddress;
     private TextView textViewFormattedPhone;
+
+    private Venue venue;
+    private Result result;
+    private List<Venue> venueList;
+    private List<Result> resultList;
 
     private void displayDetail(Result result) {
         if (result == null) {
@@ -280,6 +286,20 @@ public class DetailActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        result = intent.getExtras().getParcelable(SearchActivity.RESULT_ITEM);
+        displayDetail(result);
+
+        venue = intent.getExtras().getParcelable(SearchActivity.VENUE_ITEM);
+        displayDetail(venue);
+
+        venueList = intent.getParcelableArrayListExtra(SearchActivity.VENUE_LIST);
+        resultList = intent.getParcelableArrayListExtra(SearchActivity.RESULT_LIST);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
@@ -309,21 +329,14 @@ public class DetailActivity extends AppCompatActivity {
         textViewVisit = (TextView) findViewById(R.id.visit);
         visitCountContainer = (LinearLayout) findViewById(R.id.visit_count_container);
 
-        Result result = getIntent().getExtras().getParcelable(SearchActivity.RESULT_ITEM);
+        result = getIntent().getExtras().getParcelable(SearchActivity.RESULT_ITEM);
         displayDetail(result);
 
-        Venue venue = getIntent().getExtras().getParcelable(SearchActivity.VENUE_ITEM);
+        venue = getIntent().getExtras().getParcelable(SearchActivity.VENUE_ITEM);
         displayDetail(venue);
 
-        // Set up floating action button
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        venueList = getIntent().getParcelableArrayListExtra(SearchActivity.VENUE_LIST);
+        resultList = getIntent().getParcelableArrayListExtra(SearchActivity.RESULT_LIST);
 
         buttonCall.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -345,6 +358,19 @@ public class DetailActivity extends AppCompatActivity {
                 }else {
                     Toast.makeText(DetailActivity.this, "Phone number not found", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        imageViewStaticMap.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(DetailActivity.this, MapsActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                i.putExtra(SearchActivity.RESULT_ITEM, result);
+                i.putExtra(SearchActivity.VENUE_ITEM, venue);
+                i.putParcelableArrayListExtra(SearchActivity.VENUE_LIST, (ArrayList<? extends Parcelable>) venueList);
+                i.putParcelableArrayListExtra(SearchActivity.RESULT_LIST, (ArrayList<? extends Parcelable>) resultList);
+                startActivity(i);
             }
         });
 

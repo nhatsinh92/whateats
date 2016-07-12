@@ -137,6 +137,7 @@ public class Venue implements Parcelable {
         url = in.readString();
         referralId = in.readString();
         location = in.readParcelable(Location.class.getClassLoader());
+        in.readTypedList(categories, Category.CREATOR);
     }
 
     public static final Creator<Venue> CREATOR = new Creator<Venue>() {
@@ -867,5 +868,6 @@ public class Venue implements Parcelable {
         parcel.writeString(url);
         parcel.writeString(referralId);
         parcel.writeParcelable(location, i);
+        parcel.writeTypedList(categories);
     }
 }
