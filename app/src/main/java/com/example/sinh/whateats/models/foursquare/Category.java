@@ -1,10 +1,13 @@
 
 package com.example.sinh.whateats.models.foursquare;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class Category {
+public class Category implements Parcelable {
 
     @SerializedName("id")
     @Expose
@@ -24,6 +27,26 @@ public class Category {
     @SerializedName("primary")
     @Expose
     private Boolean primary;
+
+    protected Category(Parcel in) {
+        id = in.readString();
+        name = in.readString();
+        pluralName = in.readString();
+        shortName = in.readString();
+        icon = in.readParcelable(Icon.class.getClassLoader());
+    }
+
+    public static final Creator<Category> CREATOR = new Creator<Category>() {
+        @Override
+        public Category createFromParcel(Parcel in) {
+            return new Category(in);
+        }
+
+        @Override
+        public Category[] newArray(int size) {
+            return new Category[size];
+        }
+    };
 
     /**
      * 
@@ -133,4 +156,17 @@ public class Category {
         this.primary = primary;
     }
 
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel parcel, int i) {
+        parcel.writeString(id);
+        parcel.writeString(name);
+        parcel.writeString(pluralName);
+        parcel.writeString(shortName);
+        parcel.writeParcelable(icon, i);
+    }
 }

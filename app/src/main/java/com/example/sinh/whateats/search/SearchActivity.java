@@ -1,11 +1,21 @@
 package com.example.sinh.whateats.search;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Build;
+import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
@@ -23,16 +33,29 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.sinh.whateats.R;
 import com.example.sinh.whateats.detail.DetailActivity;
 import com.example.sinh.whateats.events.KeywordSubmitEvent;
+import com.example.sinh.whateats.maps.MapsActivity;
 import com.example.sinh.whateats.models.foursquare.Venue;
 import com.example.sinh.whateats.models.googleplace.Result;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 import org.greenrobot.eventbus.EventBus;
 
-public class SearchActivity extends AppCompatActivity implements OnListFragmentInteractionListener{
+import java.util.ArrayList;
+import java.util.List;
+
+public class SearchActivity extends AppCompatActivity implements OnListFragmentInteractionListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -65,6 +88,26 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
      */
     public final static String RESULT_ITEM = "com.example.sinh.whateats.search.RESULT_ITEM";
     public final static String VENUE_ITEM = "com.example.sinh.whateats.search.VENUE_ITEM";
+    public final static String RESULT_LIST = "com.example.sinh.whateats.search.RESULT_LIST";
+    public final static String VENUE_LIST = "com.example.sinh.whateats.search.VENUE_LIST";
+
+
+    /**
+     * The {@link GoogleApiClient} to get last known location
+     */
+    private GoogleApiClient mGoogleApiClient;
+    private Location mLastLocation;
+    private LocationRequest mLocationRequest;
+
+    /**
+     * Permission
+     */
+    private static final String[] LOCATION_PERMS = {
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+    };
+    private static final int LOCATION_REQUEST_CODE = 1337;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,10 +131,29 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                Intent intent = new Intent(SearchActivity.this, MapsActivity.class);
+                if (foursquareResultFragment.venueList != null
+                        && googlePlaceResultFragment.resultList != null) {
+                    intent.putParcelableArrayListExtra(VENUE_LIST,
+                            (ArrayList<? extends Parcelable>) foursquareResultFragment.venueList);
+                    intent.putParcelableArrayListExtra(RESULT_LIST,
+                            (ArrayList<? extends Parcelable>) googlePlaceResultFragment.resultList);
+                    startActivity(intent);
+                }
             }
         });
+
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
 
     }
 
@@ -99,8 +161,14 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
     private SearchView.OnQueryTextListener mQueryTextListener = new SearchView.OnQueryTextListener() {
         @Override
         public boolean onQueryTextSubmit(String query) {
-            EventBus.getDefault().post(new KeywordSubmitEvent(query));
-            searchView.clearFocus();
+            if (mLastLocation != null) {
+                String location = mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
+                EventBus.getDefault().post(new KeywordSubmitEvent(query, location));
+                searchView.clearFocus();
+            }else {
+                Toast.makeText(SearchActivity.this, "Getting your location. Please stay a while", Toast.LENGTH_SHORT).show();
+            }
+
             return true;
         }
 
@@ -140,17 +208,103 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
     @Override
     public void onResultListItemClicked(Result item) {
         Log.d("Item Clicked", item.getName());
-        Intent i = new Intent(SearchActivity.this, DetailActivity.class);
-        i.putExtra(RESULT_ITEM, item);
-        startActivity(i);
+        if (foursquareResultFragment.venueList != null) {
+            Intent i = new Intent(SearchActivity.this, DetailActivity.class);
+            i.putExtra(RESULT_ITEM, item);
+            i.putParcelableArrayListExtra(VENUE_LIST, (ArrayList<? extends Parcelable>) foursquareResultFragment.venueList);
+            i.putParcelableArrayListExtra(RESULT_LIST, (ArrayList<? extends Parcelable>) googlePlaceResultFragment.resultList);
+            startActivity(i);
+        }
     }
 
     @Override
     public void onVenueListItemClicked(Venue item) {
         Log.d("Item Clicked", item.getName());
-        Intent i = new Intent(SearchActivity.this, DetailActivity.class);
-        i.putExtra(VENUE_ITEM, item);
-        startActivity(i);
+        if (googlePlaceResultFragment.resultList != null) {
+            Intent i = new Intent(SearchActivity.this, DetailActivity.class);
+            i.putExtra(VENUE_ITEM, item);
+            i.putParcelableArrayListExtra(VENUE_LIST, (ArrayList<? extends Parcelable>) foursquareResultFragment.venueList);
+            i.putParcelableArrayListExtra(RESULT_LIST, (ArrayList<? extends Parcelable>) googlePlaceResultFragment.resultList);
+            startActivity(i);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
+        }
+    }
+
+    public void handleNewLocation(Location location) {
+        mLastLocation = location;
+        Log.d("TAG", location.toString());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == LOCATION_REQUEST_CODE) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(SearchActivity.this, "Getting your location. Please stay a while", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, LOCATION_PERMS, LOCATION_REQUEST_CODE);
+            return;
+        }
+
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation == null) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        }
+        else {
+            handleNewLocation(mLastLocation);
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()) {
+            try {
+                // Start an Activity that tries to resolve the error
+                connectionResult.startResolutionForResult(this, 9000);
+            } catch (IntentSender.SendIntentException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.i("TAG", "Location services connection failed with code " + connectionResult.getErrorCode());
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        handleNewLocation(location);
     }
 
     /**
@@ -173,7 +327,7 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
                     return googlePlaceResultFragment;
                 }
                 case 1: {
-                    foursquareResultFragment = FoursquareResultFragment.newInstance(1);
+                    foursquareResultFragment = FoursquareResultFragment.newInstance(2);
                     return foursquareResultFragment;
                 }
 

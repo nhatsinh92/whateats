@@ -55,6 +55,8 @@ public class Location implements Parcelable {
         state = in.readString();
         country = in.readString();
         formattedAddress = in.createStringArrayList();
+        lat = in.readDouble();
+        lng = in.readDouble();
     }
 
     public static final Creator<Location> CREATOR = new Creator<Location>() {
@@ -282,5 +284,7 @@ public class Location implements Parcelable {
         parcel.writeString(state);
         parcel.writeString(country);
         parcel.writeStringList(formattedAddress);
+        parcel.writeDouble(lat);
+        parcel.writeDouble(lng);
     }
 }
