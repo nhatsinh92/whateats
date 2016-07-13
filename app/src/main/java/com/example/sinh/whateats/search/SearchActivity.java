@@ -106,7 +106,7 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
     };
-    private static final int REQUEST_CODE = 1337;
+    private static final int LOCATION_REQUEST_CODE = 1337;
 
 
     @Override
@@ -256,11 +256,21 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == LOCATION_REQUEST_CODE) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                    || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(SearchActivity.this, "Getting your location. Please stay a while", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
     public void onConnected(@Nullable Bundle bundle) {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, LOCATION_PERMS, REQUEST_CODE);
+            ActivityCompat.requestPermissions(this, LOCATION_PERMS, LOCATION_REQUEST_CODE);
             return;
         }
 

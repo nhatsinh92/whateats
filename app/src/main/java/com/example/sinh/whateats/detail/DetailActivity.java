@@ -97,6 +97,14 @@ public class DetailActivity extends AppCompatActivity {
     private List<Venue> venueList;
     private List<Result> resultList;
 
+    /**
+     * Permission
+     */
+    private static final String[] CALL_PERM = {
+            Manifest.permission.CALL_PHONE,
+    };
+    private static final int CALL_PHONE_REQUEST_CODE = 1338;
+
     private void displayDetail(Result result) {
         if (result == null) {
             return;
@@ -351,6 +359,7 @@ public class DetailActivity extends AppCompatActivity {
                         //                                          int[] grantResults)
                         // to handle the case where the user grants the permission. See the documentation
                         // for ActivityCompat#requestPermissions for more details.
+                        ActivityCompat.requestPermissions(DetailActivity.this, CALL_PERM, CALL_PHONE_REQUEST_CODE);
                         return;
                     }
                     startActivity(callIntent);
@@ -376,6 +385,17 @@ public class DetailActivity extends AppCompatActivity {
         // Set up action bar
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle("Detail");
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == CALL_PHONE_REQUEST_CODE) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                Intent callIntent = new Intent(Intent.ACTION_CALL);
+                callIntent.setData(Uri.parse("tel:" + textViewFormattedPhone.getText()));
+                startActivity(callIntent);
+            }
+        }
     }
 
     @Override

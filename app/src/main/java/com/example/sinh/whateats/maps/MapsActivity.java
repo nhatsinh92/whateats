@@ -515,7 +515,6 @@ public class MapsActivity extends AppCompatActivity implements
                         String url = response.raw().request().url().toString();
                         Glide.with(context)
                                 .load(url)
-                                .error(R.drawable.no_img_found)
                                 .listener(new RequestListener<String, GlideDrawable>() {
                                     @Override
                                     public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
@@ -531,6 +530,7 @@ public class MapsActivity extends AppCompatActivity implements
                                         return false;
                                     }
                                 })
+                                .error(R.drawable.no_img_found)
                                 .into(iv);
                     }
 
@@ -559,7 +559,6 @@ public class MapsActivity extends AppCompatActivity implements
                                 + "original" + i.getSuffix();
                         Glide.with(context)
                                 .load(url)
-                                .error(R.drawable.no_img_found)
                                 .listener(new RequestListener<String, GlideDrawable>() {
                                     @Override
                                     public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
@@ -575,6 +574,7 @@ public class MapsActivity extends AppCompatActivity implements
                                         return false;
                                     }
                                 })
+                                .error(R.drawable.no_img_found)
                                 .into(iv);
                     }
                 }
