@@ -1,9 +1,14 @@
 package com.example.sinh.whateats.maps;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,10 +22,13 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.example.sinh.whateats.R;
 import com.example.sinh.whateats.detail.DetailActivity;
+import com.example.sinh.whateats.models.foursquare.Item;
+import com.example.sinh.whateats.models.foursquare.PhotosResponse;
 import com.example.sinh.whateats.models.foursquare.Venue;
-import com.example.sinh.whateats.models.googleplace.PlaceResponse;
-import com.example.sinh.whateats.models.googleplace.PlaceResult;
+import com.example.sinh.whateats.models.googleplace.Photo;
 import com.example.sinh.whateats.models.googleplace.Result;
+import com.example.sinh.whateats.network.FoursquareApi;
+import com.example.sinh.whateats.network.FoursquareServiceGenerator;
 import com.example.sinh.whateats.network.GooglePlaceApi;
 import com.example.sinh.whateats.network.GooglePlaceServiceGenerator;
 import com.example.sinh.whateats.search.SearchActivity;
@@ -29,7 +37,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -38,6 +45,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MapsActivity extends AppCompatActivity implements
         OnMapReadyCallback,
@@ -90,6 +102,21 @@ public class MapsActivity extends AppCompatActivity implements
         mMap.setOnMapClickListener(this);
 
         populateMarkers();
+
+        mMap.getUiSettings().setCompassEnabled(true);
+        mMap.getUiSettings().setMapToolbarEnabled(false);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
     }
 
     @Override
@@ -99,7 +126,7 @@ public class MapsActivity extends AppCompatActivity implements
                 this.onBackPressed();
                 return true;
             case R.id.direction:
-                
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -133,16 +160,17 @@ public class MapsActivity extends AppCompatActivity implements
         }else {
             Intent i = new Intent(MapsActivity.this, DetailActivity.class);
             MarkerInformation mi = markers.get(marker);
-            if (mi.type.equals("result")) {
+            if (mi.mResult != null) {
                 for (Result r: resultList) {
-                    if (r.getPlaceId().equals(mi.id)) {
+                    if (r.getPlaceId().equals(mi.mId)) {
                         i.putExtra(SearchActivity.RESULT_ITEM, r);
                         break;
                     }
                 }
-            }else if (mi.type.equals("venue")) {
+            }
+            if (mi.mVenue != null) {
                 for (Venue v: venueList) {
-                    if (v.getId().equals(mi.id)) {
+                    if (v.getId().equals(mi.mId)) {
                         i.putExtra(SearchActivity.VENUE_ITEM, v);
                         break;
                     }
@@ -177,7 +205,7 @@ public class MapsActivity extends AppCompatActivity implements
                         .title(r.getName())
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
                 builder.include(latLng);
-                markers.put(m, new MarkerInformation(r.getPlaceId(), r.getVicinity(), r.getIcon(), "result"));
+                markers.put(m, new MarkerInformation(r.getPlaceId(), r.getVicinity(), r));
             }
             for (Venue v : venueList) {
                 com.example.sinh.whateats.models.foursquare.Location l = v.getLocation();
@@ -187,8 +215,9 @@ public class MapsActivity extends AppCompatActivity implements
                         .title(v.getName())
                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)));
                 builder.include(latLng);
-                String icon = v.getCategories().get(0).getIcon().getPrefix() + "64" + v.getCategories().get(0).getIcon().getSuffix();
-                markers.put(m, new MarkerInformation(v.getId(), v.getLocation().getAddress(), icon, "venue"));
+                markers.put(m, new MarkerInformation(v.getId(),
+                        v.getLocation().getFormattedAddress().toString().replace("[", "").replace("]", "")
+                        , v));
             }
 
             LatLngBounds bounds = builder.build();
@@ -198,7 +227,7 @@ public class MapsActivity extends AppCompatActivity implements
             mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(markers));
             if (venue != null) {
                 for (Marker m: markers.keySet()) {
-                    if (markers.get(m).id.equals(venue.getId())) {
+                    if (markers.get(m).mId.equals(venue.getId())) {
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
                         m.showInfoWindow();
                         break;
@@ -206,7 +235,7 @@ public class MapsActivity extends AppCompatActivity implements
                 }
             }else if (result != null) {
                 for (Marker m: markers.keySet()) {
-                    if (markers.get(m).id.equals(result.getPlaceId())) {
+                    if (markers.get(m).mId.equals(result.getPlaceId())) {
                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
                         m.showInfoWindow();
                         break;
@@ -224,12 +253,12 @@ public class MapsActivity extends AppCompatActivity implements
 
     private boolean isNewPlaceClicked (MarkerInformation mi){
         if (venue != null) {
-            if (!mi.id.equals(venue.getId())) {
+            if (!mi.mId.equals(venue.getId())) {
                 return true;
             }
         }
         if (result != null) {
-            if (!mi.id.equals(result.getPlaceId())) {
+            if (!mi.mId.equals(result.getPlaceId())) {
                 return true;
             }
         }
@@ -254,31 +283,106 @@ public class MapsActivity extends AppCompatActivity implements
             address = (TextView) mView.findViewById(R.id.address);
         }
 
+        private void getPhoto(final Context context, final ImageView iv, Result r) {
+            GooglePlaceApi googlePlaceApi = GooglePlaceServiceGenerator.createService(GooglePlaceApi.class);
+            if (r.getPhotos() == null) {
+                iv.setImageResource(R.drawable.no_img_found);
+            }else if (r.getPhotos().isEmpty()) {
+                iv.setImageResource(R.drawable.no_img_found);
+            } else {
+                Photo p = r.getPhotos().get(0);
+                Call<ResponseBody> responseBodyCall = googlePlaceApi.getPhoto(p.getPhotoReference(),
+                        p.getHeight(), p.getWidth());
+                responseBodyCall.enqueue(new Callback<ResponseBody>() {
+                    @Override
+                    public void onResponse(Call<ResponseBody> responseBodyCall, Response<ResponseBody> response) {
+                        String url = response.raw().request().url().toString();
+                        Glide.with(context)
+                                .load(url)
+                                .error(R.drawable.no_img_found)
+                                .listener(new RequestListener<String, GlideDrawable>() {
+                                    @Override
+                                    public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+                                        if (markerShowingInfoWindow != null && markerShowingInfoWindow.isInfoWindowShown()) {
+                                            markerShowingInfoWindow.hideInfoWindow();
+                                            markerShowingInfoWindow.showInfoWindow();
+                                        }
+                                        return false;
+                                    }
+                                })
+                                .into(iv);
+                    }
+
+                    @Override
+                    public void onFailure(Call<ResponseBody> call, Throwable t) {
+                        Log.e("GET_PHOTO", "Some error when get google place photos");
+                        iv.setImageResource(R.drawable.no_img_found);
+                    }
+                });
+            }
+
+        }
+
+        private void getPhoto(final Context context, final ImageView iv, Venue v) {
+            FoursquareApi foursquareApi = FoursquareServiceGenerator.createService(FoursquareApi.class);
+            Call<PhotosResponse> photosResponseCall = foursquareApi.getPhotos(v.getId());
+            photosResponseCall.enqueue(new Callback<PhotosResponse>() {
+                @Override
+                public void onResponse(Call<PhotosResponse> call, Response<PhotosResponse> response) {
+                    List<Item> itemList = response.body().getResponse().getPhotos().getItems();
+                    if (itemList.isEmpty()) {
+                        iv.setImageResource(R.drawable.no_img_found);
+                    } else {
+                        Item i = itemList.get(0);
+                        String url= i.getPrefix()
+                                + "original" + i.getSuffix();
+                        Glide.with(context)
+                                .load(url)
+                                .error(R.drawable.no_img_found)
+                                .listener(new RequestListener<String, GlideDrawable>() {
+                                    @Override
+                                    public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
+                                        if (markerShowingInfoWindow != null && markerShowingInfoWindow.isInfoWindowShown()) {
+                                            markerShowingInfoWindow.hideInfoWindow();
+                                            markerShowingInfoWindow.showInfoWindow();
+                                        }
+                                        return false;
+                                    }
+                                })
+                                .into(iv);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<PhotosResponse> call, Throwable t) {
+                    Log.e("GET_PHOTO", "Some error when get foursquare photos");
+                    iv.setImageResource(R.drawable.no_img_found);
+                }
+            });
+        }
+
         @Override
         public View getInfoWindow(Marker marker) {
             markerShowingInfoWindow = marker;
             MarkerInformation mi = markers.get(marker);
             placeName.setText(marker.getTitle());
-            if (mi.address != null)
-                address.setText(mi.address);
-            Glide.with(MapsActivity.this)
-                    .load(mi.icon)
-                    .listener(new RequestListener<String, GlideDrawable>() {
-                        @Override
-                        public boolean onException(Exception e, String model, Target<GlideDrawable> target, boolean isFirstResource) {
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onResourceReady(GlideDrawable resource, String model, Target<GlideDrawable> target, boolean isFromMemoryCache, boolean isFirstResource) {
-                            if (markerShowingInfoWindow != null && markerShowingInfoWindow.isInfoWindowShown()) {
-                                markerShowingInfoWindow.hideInfoWindow();
-                                markerShowingInfoWindow.showInfoWindow();
-                            }
-                            return false;
-                        }
-                    })
-                    .into(placePhoto);
+            address.setText(mi.mAddress);
+            if (mi.mResult != null) {
+                getPhoto(MapsActivity.this, placePhoto, mi.mResult);
+            }
+            if (mi.mVenue != null) {
+                getPhoto(MapsActivity.this, placePhoto, mi.mVenue);
+            }
 
             return mView;
         }
@@ -291,16 +395,21 @@ public class MapsActivity extends AppCompatActivity implements
 
     private class MarkerInformation {
 
-        public String id;
-        public String address;
-        public String icon;
-        public String type;
+        public String mId;
+        public String mAddress;
+        public Result mResult;
+        public Venue mVenue;
 
-        public MarkerInformation(String id, String address, String icon, String type) {
-            this.id = id;
-            this.address = address;
-            this.icon = icon;
-            this.type = type;
+        public MarkerInformation(String id, String address, Result result) {
+            this.mId = id;
+            this.mAddress = address;
+            this.mResult = result;
+        }
+
+        public MarkerInformation(String id, String address, Venue venue) {
+            this.mId = id;
+            this.mAddress = address;
+            this.mVenue = venue;
         }
     }
 }

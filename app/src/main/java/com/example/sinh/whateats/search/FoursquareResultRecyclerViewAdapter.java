@@ -55,7 +55,7 @@ public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<Fo
         holder.mAddress.setText(holder.mItem.getLocation()
                 .getFormattedAddress().toString()
                 .replace("[","").replace("]",""));
-        getPhotoAndSet(holder.mImage, holder.mItem);
+        getFourSquarePhoto(holder.mImage, holder.mItem);
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -73,7 +73,7 @@ public class FoursquareResultRecyclerViewAdapter extends RecyclerView.Adapter<Fo
         return mVenueList.size();
     }
 
-    private void getPhotoAndSet(final ImageView iv, Venue v) {
+    private void getFourSquarePhoto(final ImageView iv, Venue v) {
         FoursquareApi foursquareApi = FoursquareServiceGenerator.createService(FoursquareApi.class);
         Call<PhotosResponse> photosResponseCall = foursquareApi.getPhotos(v.getId());
         photosResponseCall.enqueue(new Callback<PhotosResponse>() {

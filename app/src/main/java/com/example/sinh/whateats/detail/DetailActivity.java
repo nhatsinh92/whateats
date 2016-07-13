@@ -76,7 +76,6 @@ public class DetailActivity extends AppCompatActivity {
     private List<Fragment> mImageFragmentList = new ArrayList<>();
     private GooglePlaceApi googlePlaceApi;
     private FoursquareApi foursquareApi;
-    public static String NO_IMAGE_FOUND_URL = "http://www.geniusparts.co.uk/wp-content/plugins/woocommerce/assets/images/placeholder.png";
 
     private TextView textViewPlaceName;
     private TextView textViewReviews;
@@ -111,7 +110,7 @@ public class DetailActivity extends AppCompatActivity {
                 PlaceResult placeResult = response.body().getResult();
 
                 if (placeResult.getPhotos().isEmpty()) {
-                    mImageFragmentList.add(ImageFragment.newInstance(NO_IMAGE_FOUND_URL));
+                    mImageFragmentList.add(ImageFragment.newInstance(null));
                     mImagePagerAdapter.notifyDataSetChanged();
                 } else {
                     for (Photo photo : placeResult.getPhotos()) {
@@ -206,7 +205,7 @@ public class DetailActivity extends AppCompatActivity {
                 Log.d("GET_PHOTO", String.valueOf(itemList.size()));
                 textViewPhotos.setText(String.valueOf(itemList.size()));
                 if (itemList.isEmpty()) {
-                    mImageFragmentList.add(ImageFragment.newInstance(NO_IMAGE_FOUND_URL));
+                    mImageFragmentList.add(ImageFragment.newInstance(null));
                 } else {
                     for (Item i : itemList) {
                         String url = i.getPrefix() + "original" + i.getSuffix();

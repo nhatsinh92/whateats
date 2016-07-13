@@ -94,7 +94,7 @@ public class GooglePlaceResultFragment extends Fragment {
     @Subscribe
     public void onEvent(KeywordSubmitEvent event) {
         googlePlaceApi = GooglePlaceServiceGenerator.createService(GooglePlaceApi.class);
-        Call<GooglePlaceResponse> call = googlePlaceApi.searchNearbyPlace("10.7960682,106.6760491", event.getmQuery(), "distance");
+        Call<GooglePlaceResponse> call = googlePlaceApi.searchNearbyPlace(event.getmLocation(), event.getmQuery(), "distance");
         call.enqueue(new Callback<GooglePlaceResponse>() {
             @Override
             public void onResponse(Call<GooglePlaceResponse> call, Response<GooglePlaceResponse> response) {

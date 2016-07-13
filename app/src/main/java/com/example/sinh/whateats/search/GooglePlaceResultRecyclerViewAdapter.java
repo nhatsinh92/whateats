@@ -53,7 +53,7 @@ public class GooglePlaceResultRecyclerViewAdapter extends RecyclerView.Adapter<G
         holder.mItem = mResultList.get(position);
         holder.mName.setText(holder.mItem.getName());
         holder.mAddress.setText(holder.mItem.getVicinity());
-        getPhotoAndSet(holder.mImage, holder.mItem);
+        getGooglePlacePhoto(holder.mImage, holder.mItem);
 
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,7 +72,7 @@ public class GooglePlaceResultRecyclerViewAdapter extends RecyclerView.Adapter<G
         return mResultList.size();
     }
 
-    private void getPhotoAndSet(final ImageView iv, Result r) {
+    private void getGooglePlacePhoto(final ImageView iv, Result r) {
         GooglePlaceApi googlePlaceApi = GooglePlaceServiceGenerator.createService(GooglePlaceApi.class);
         if (r.getPhotos() == null) {
             iv.setImageResource(R.drawable.ic_place_holder);
@@ -101,7 +101,6 @@ public class GooglePlaceResultRecyclerViewAdapter extends RecyclerView.Adapter<G
                 }
             });
         }
-
 
     }
 

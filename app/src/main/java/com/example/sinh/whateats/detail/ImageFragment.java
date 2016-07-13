@@ -61,12 +61,17 @@ public class ImageFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_image_item, container, false);
         ImageView imageView = (ImageView) view.findViewById(R.id.image);
-        Glide.with(view.getContext())
-                .load(this.mImageUrl)
-                .thumbnail(Glide.with(view.getContext()).load(R.raw.loading))
-                .error(R.drawable.ic_place_holder_2)
-                .dontAnimate()
-                .into(imageView);
+        if (mImageUrl == null) {
+            imageView.setImageResource(R.drawable.no_img_found);
+        }else {
+            Glide.with(view.getContext())
+                    .load(this.mImageUrl)
+                    .thumbnail(Glide.with(view.getContext()).load(R.raw.loading))
+                    .error(R.drawable.ic_place_holder_2)
+                    .dontAnimate()
+                    .into(imageView);
+        }
+
         return view;
     }
 
