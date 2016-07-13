@@ -251,6 +251,7 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
     }
 
     public void handleNewLocation(Location location) {
+        mLastLocation = location;
         Log.d("TAG", location.toString());
     }
 
@@ -293,7 +294,6 @@ public class SearchActivity extends AppCompatActivity implements OnListFragmentI
 
     @Override
     public void onLocationChanged(Location location) {
-        mLastLocation = location;
         handleNewLocation(location);
     }
 

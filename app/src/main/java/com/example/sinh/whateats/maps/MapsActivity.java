@@ -3,9 +3,14 @@ package com.example.sinh.whateats.maps;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -13,8 +18,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
@@ -22,6 +27,9 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.example.sinh.whateats.R;
 import com.example.sinh.whateats.detail.DetailActivity;
+import com.example.sinh.whateats.models.direction.Bounds;
+import com.example.sinh.whateats.models.direction.DirectionResponse;
+import com.example.sinh.whateats.models.direction.Route;
 import com.example.sinh.whateats.models.foursquare.Item;
 import com.example.sinh.whateats.models.foursquare.PhotosResponse;
 import com.example.sinh.whateats.models.foursquare.Venue;
@@ -32,6 +40,11 @@ import com.example.sinh.whateats.network.FoursquareServiceGenerator;
 import com.example.sinh.whateats.network.GooglePlaceApi;
 import com.example.sinh.whateats.network.GooglePlaceServiceGenerator;
 import com.example.sinh.whateats.search.SearchActivity;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -41,6 +54,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +70,10 @@ public class MapsActivity extends AppCompatActivity implements
         OnMapReadyCallback,
         GoogleMap.OnMarkerClickListener,
         GoogleMap.OnInfoWindowClickListener,
-        GoogleMap.OnMapClickListener {
+        GoogleMap.OnMapClickListener,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
     private GoogleMap mMap;
     private Menu mOptionsMenu;
@@ -65,6 +83,16 @@ public class MapsActivity extends AppCompatActivity implements
     private Venue venue;
     private Result result;
     private HashMap<Marker, MarkerInformation> markers = new HashMap<>();
+    private Marker selectedMarker;
+    Polyline wrapperLine;
+    Polyline line;
+
+    /**
+     * The {@link GoogleApiClient} to get last known location
+     */
+    private GoogleApiClient mGoogleApiClient;
+    private Location mLastLocation;
+    private LocationRequest mLocationRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +109,18 @@ public class MapsActivity extends AppCompatActivity implements
         result = getIntent().getExtras().getParcelable(SearchActivity.RESULT_ITEM);
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .addConnectionCallbacks(this)
+                    .addOnConnectionFailedListener(this)
+                    .addApi(LocationServices.API)
+                    .build();
+        }
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(10 * 1000)        // 10 seconds, in milliseconds
+                .setFastestInterval(1 * 1000); // 1 second, in milliseconds
     }
 
 
@@ -119,14 +159,119 @@ public class MapsActivity extends AppCompatActivity implements
         mMap.setMyLocationEnabled(true);
     }
 
+    private void drawDirection() {
+        if (mLastLocation == null) {
+            Toast.makeText(this, "Getting your location. Please stay a while", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        GooglePlaceApi googlePlaceApi = GooglePlaceServiceGenerator.createService(GooglePlaceApi.class);
+        String src = mLastLocation.getLatitude() + "," + mLastLocation.getLongitude();
+        String dest = selectedMarker.getPosition().latitude + "," + selectedMarker.getPosition().longitude;
+        Call<DirectionResponse> call = googlePlaceApi.getDirection(src, dest);
+        call.enqueue(new Callback<DirectionResponse>() {
+            @Override
+            public void onResponse(Call<DirectionResponse> call, Response<DirectionResponse> response) {
+                DirectionResponse directionResponse = response.body();
+                drawPath(directionResponse.getRoutes().get(0));
+                for (Marker m: markers.keySet()) {
+                    if (!m.getId().equals(selectedMarker.getId())) {
+                        m.setVisible(false);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DirectionResponse> call, Throwable t) {
+
+            }
+        });
+    }
+
+    public void drawPath(Route route) {
+        String encodedString = route.getOverviewPolyline().getPoints();
+        List<LatLng> list = decodePoly(encodedString);
+        wrapperLine = mMap.addPolyline(new PolylineOptions()
+                .addAll(list)
+                .width(16)
+                .color(Color.parseColor("#000000"))
+                .geodesic(true)
+        );
+
+        line = mMap.addPolyline(new PolylineOptions()
+                .addAll(list)
+                .width(12)
+                .color(Color.parseColor("#05b1fb"))//Google maps blue color
+                .geodesic(true)
+        );
+
+        Bounds b = route.getBounds();
+        LatLngBounds bounds = new LatLngBounds.Builder()
+                .include(new LatLng(b.getSouthwest().getLat(), b.getSouthwest().getLng()))
+                .include(new LatLng(b.getNortheast().getLat(), b.getNortheast().getLng()))
+                .build();
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 150));
+        selectedMarker.hideInfoWindow();
+    }
+
+    private List<LatLng> decodePoly(String encoded) {
+
+        List<LatLng> poly = new ArrayList<LatLng>();
+        int index = 0, len = encoded.length();
+        int lat = 0, lng = 0;
+
+        while (index < len) {
+            int b, shift = 0, result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            LatLng p = new LatLng( (((double) lat / 1E5)),
+                    (((double) lng / 1E5) ));
+            poly.add(p);
+        }
+
+        return poly;
+    }
+
+    private void showMarkers() {
+        for (Marker m: markers.keySet()) {
+            m.setVisible(true);
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                this.onBackPressed();
+                if (line != null) {
+                    showMarkers();
+                    line.remove();
+                    wrapperLine.remove();
+                    line = null;
+                    wrapperLine = null;
+                    mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selectedMarker.getPosition(), 13));
+                    selectedMarker.showInfoWindow();
+                }else {
+                    this.onBackPressed();
+                }
                 return true;
             case R.id.direction:
-
+                drawDirection();
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -147,6 +292,7 @@ public class MapsActivity extends AppCompatActivity implements
 
     @Override
     public boolean onMarkerClick(Marker marker) {
+        selectedMarker = marker;
         showDirection(true);
         return false;
     }
@@ -190,6 +336,7 @@ public class MapsActivity extends AppCompatActivity implements
 
     @Override
     public void onMapClick(LatLng latLng) {
+        selectedMarker = null;
         showDirection(false);
     }
 
@@ -228,16 +375,18 @@ public class MapsActivity extends AppCompatActivity implements
             if (venue != null) {
                 for (Marker m: markers.keySet()) {
                     if (markers.get(m).mId.equals(venue.getId())) {
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 13));
                         m.showInfoWindow();
+                        selectedMarker = m;
                         break;
                     }
                 }
             }else if (result != null) {
                 for (Marker m: markers.keySet()) {
                     if (markers.get(m).mId.equals(result.getPlaceId())) {
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 15));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m.getPosition(), 13));
                         m.showInfoWindow();
+                        selectedMarker = m;
                         break;
                     }
                 }
@@ -263,6 +412,73 @@ public class MapsActivity extends AppCompatActivity implements
             }
         }
         return false;
+    }
+
+    @Override
+    protected void onStart() {
+        mGoogleApiClient.connect();
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        mGoogleApiClient.disconnect();
+        super.onStop();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (mGoogleApiClient.isConnected()) {
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
+        }
+    }
+
+    public void handleNewLocation(Location location) {
+        mLastLocation = location;
+        Log.d("TAG", location.toString());
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        if (mLastLocation == null) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+        }
+        else {
+            handleNewLocation(mLastLocation);
+        }
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        handleNewLocation(location);
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        if (connectionResult.hasResolution()) {
+            try {
+                // Start an Activity that tries to resolve the error
+                connectionResult.startResolutionForResult(this, 9000);
+            } catch (IntentSender.SendIntentException e) {
+                e.printStackTrace();
+            }
+        } else {
+            Log.i("TAG", "Location services connection failed with code " + connectionResult.getErrorCode());
+        }
     }
 
     public class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
